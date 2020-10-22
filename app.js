@@ -51,7 +51,7 @@ app.use(bodyParser.json());
 
 
 //public 폴더를 static으로 오픈
-app.use('/public', static(path.join(__dirname, 'public')));
+app.use('/mongoDB/public', static(path.join(__dirname, 'public')));
 
 
 //public 폴더를 static으로 오픈
@@ -65,12 +65,7 @@ app.use(expressSession({
     saveUninitialized : true
 }));
 
-
-
-//라우터
-//라우터 객체 참조
-var router = express.Router();
-
+//데이터베이스연결!!!!!!!!
 
 var MongoClient = require('mongodb').MongoClient;
 
@@ -92,48 +87,70 @@ function connectDB(){
         console.log('데이터베이스에 연결되었습니다. : ' + databaseURL);
 
         //database 변수에 할당
-        database = db;
+        //mongodb 3.0이상일 경우 DB이름 명시 필수!ㅂㄷㅂㄷ
+        database = db.db('local');
     });
 }
 
-//로그인 라우팅 함수 - 데이터베이스 정보의 비교
-router.route('/process/login').post(function(req,res){
-    console.log('/process/login 호출됨');
 
+//라우팅 함수
+//라우터 객체 참조
+var router = express.Router();
+
+
+// 로그인 라우팅 함수 - 데이터베이스의 정보와 비교
+router.route('/process/login').post(function(req, res) {
+	console.log('/process/login 호출됨.');
+
+    // 요청 파라미터 확인
+    var paramId = req.body.id || req.query.id;
+    var paramPassword = req.body.password || req.query.password;
+	
+    console.log('요청 파라미터 : ' + paramId + ', ' + paramPassword);
+    
+    // 데이터베이스 객체가 초기화된 경우, authUser 함수 호출하여 사용자 인증
+	if (database) {
+		authUser(database, paramId, paramPassword, function(err, docs) {
+			if (err) {throw err;}
+			
+            // 조회된 레코드가 있으면 성공 응답 전송
+			if (docs) {
+				console.dir(docs);
+
+                // 조회 결과에서 사용자 이름 확인
+				var username = docs[0].name;
+				
+				res.writeHead('200', {'Content-Type':'text/html;charset=utf8'});
+				res.write('<h1>로그인 성공</h1>');
+				res.write('<div><p>사용자 아이디 : ' + paramId + '</p></div>');
+				res.write('<div><p>사용자 이름 : ' + username + '</p></div>');
+				res.write("<br><br><a href='/mongoDB/public/login.html'>다시 로그인하기</a>");
+				res.end();
+			
+			} else {  // 조회된 레코드가 없는 경우 실패 응답 전송
+				res.writeHead('200', {'Content-Type':'text/html;charset=utf8'});
+				res.write('<h1>로그인  실패</h1>');
+				res.write('<div><p>아이디와 패스워드를 다시 확인하십시오.</p></div>');
+				res.write("<br><br><a href='/mongoDB/public/login.html'>다시 로그인하기</a>");
+				res.end();
+			}
+		});
+	} else {  // 데이터베이스 객체가 초기화되지 않은 경우 실패 응답 전송
+		res.writeHead('200', {'Content-Type':'text/html;charset=utf8'});
+		res.write('<h2>데이터베이스 연결 실패</h2>');
+		res.write('<div><p>데이터베이스에 연결하지 못했습니다.</p></div>');
+		res.end();
+	}
+	
 });
+
 
 
 //라우터 객체 등록
 app.use('/', router);
 
 
-//===== 404 오류 페이지 처리 =====//
-var errorHandler = expressErrorHandler({
-    static:{
-        '404' : 'mongoDB/public/404.html'
-    }
-});
-
-app.use(expressErrorHandler.httpError(404));
-app.use(errorHandler);
-
-
-//===== 서버 시작 =====/
-http.createServer(app).listen(app.get('port'), function(){
-
-    console.log('서버가 시작되었습니다. 포트 : ' + app.get('port'));
-
-    //데이터베이스 연결
-    connectDB();
-});
-
-
-
-//mongoDB 실행
-// cmd > cd C:\Program Files\MongoDB\Server\4.4\bin > mongod --dbpath /Users/user/database/local
-
-
-//사용자를 인증하기!!
+//사용자 인증하기!!
 var authUser = function(database, id, password, callback){
     console.log('authUser 함수 호출!!');
 
@@ -161,45 +178,28 @@ var authUser = function(database, id, password, callback){
     });
 }
 
-
-
-
-//로그인 처리 후
-app.post('/process/login', function(req,res){
-
-    console.log('/process/login 호출!!');
-
-    var paramID = req.param('id');
-    var paramPW = req.param('password');
-
-    if(database){
-        //사용자가 요청한 아이디 패스워드 전달
-        authUser(database, paramID, paramPW, function(err, docs){
-
-            if(err){throw err;}
-
-            if(docs){
-
-                console.dir(docs);
-                var username = docs[0].name;
-                res.writeHead('200',{'Content-Type' : 'text/html;charset=UTF-8'});
-                res.write('<h1>로그인 성공!!</h1>');
-                res.write('<div><p>사용자 아이디 : '+paramID+'</p></div>');
-                res.write('<div><p>사용자 이름 : '+paramPW+'</p></div>');
-                res.write("<br><br><a href='/public/login.html'>로그인 페이지로 가기!</a>");
-                res.end();
-            }
-        });
-    }else{
-
-        res.writeHead('200',{'Content-Type' : 'text/html;charset=UTF-8'});
-        res.write('<h2>데이터베이스 연결 실패!!</h2>');
-        res.write('<div><p>데이터베이스에 연결하지 못했습니다.</p></div>');
-        res.end();
+//===== 404 오류 페이지 처리 =====//
+var errorHandler = expressErrorHandler({
+    static:{
+        '404' : 'mongoDB/public/404.html'
     }
 });
 
+app.use(expressErrorHandler.httpError(404));
+app.use(errorHandler);
 
-//
 
+//===== EXPRESS 서버 시작 =====/
+http.createServer(app).listen(app.get('port'), function(){
+
+    console.log('서버가 시작되었습니다. 포트 : ' + app.get('port'));
+
+    //데이터베이스 연결
+    connectDB();
+});
+
+
+
+//mongoDB 실행
+// cmd > cd C:\Program Files\MongoDB\Server\4.4\bin > mongod --dbpath /Users/user/database/local
 
