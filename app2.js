@@ -99,49 +99,58 @@ function connectDB(){
 var router = express.Router();
 
 
-// 로그인 라우팅 함수 - 데이터베이스의 정보와 비교
-router.route('/process/login').post(function(req, res) {
-	console.log('/process/login 호출됨.');
-
-    // 요청 파라미터 확인
+// 사용자 추가 라우팅 함수 - 클라이언트에서 보낸 데이터를 이용해 데이터베이스에 추가
+router.route('/process/adduser').post(function(req, res) {
+	console.log('/process/adduser 호출됨.');
+    
+    //요청된 파라미터
     var paramId = req.body.id || req.query.id;
     var paramPassword = req.body.password || req.query.password;
-	
-    console.log('요청 파라미터 : ' + paramId + ', ' + paramPassword);
+    var paramName = req.body.name || req.query.name;
     
-    // 데이터베이스 객체가 초기화된 경우, authUser 함수 호출하여 사용자 인증
-	if (database) {
-		authUser(database, paramId, paramPassword, function(err, docs) {
-			if (err) {throw err;}
-			
-            // 조회된 레코드가 있으면 성공 응답 전송
-			if (docs) {
-				console.dir(docs);
+    console.log('요청 파라미터 : ' + paramId + ', ' + paramPassword + ', ' + paramName);
+    
+    //데이터베이스 객체 초기화된 경우, addUser 함수 호출하여 사용자 추가
+    if(database){
+        console.dir(database);
+       
+        /*
+         Null 과 Undefined 를 제외하면 위의 타입들은 전부 Object 의 인스턴스들이다. Object 의 인스턴스라는 말은 그 object 가(무엇이 되었든) [[prototype]] 프로퍼티를 가지고 있어 프로토타입 체이닝을 통해 Object.prototype 까지 도달할 수 있다는 뜻이 된다. 여기서 [[prototype]] 은 대부분의 브라우저 콘솔에서 확인할 수 있는 __proto__ 를 의미한다.
+         
+        */
+        addUser(database, paramId, paramPassword, paramName, function(err, result){
+            if(err){throw err;}
+            
+            //결과 객체 확인하여 추가된 데이터 있으면 성공 응답 전송
+            if(result && result.insertedCount > 0){
+                console.dir(result);
+                
+            /*{
 
-                // 조회 결과에서 사용자 이름 확인
-				var username = docs[0].name;
-				
-				res.writeHead('200', {'Content-Type':'text/html;charset=utf8'});
-				res.write('<h1>로그인 성공</h1>');
-				res.write('<div><p>사용자 아이디 : ' + paramId + '</p></div>');
-				res.write('<div><p>사용자 이름 : ' + username + '</p></div>');
-				res.write("<br><br><a href='/mongoDB/public/login.html'>다시 로그인하기</a>");
-				res.end();
-			
-			} else {  // 조회된 레코드가 없는 경우 실패 응답 전송
-				res.writeHead('200', {'Content-Type':'text/html;charset=utf8'});
-				res.write('<h1>로그인  실패</h1>');
-				res.write('<div><p>아이디와 패스워드를 다시 확인하십시오.</p></div>');
-				res.write("<br><br><a href='/mongoDB/public/login.html'>다시 로그인하기</a>");
-				res.end();
-			}
-		});
-	} else {  // 데이터베이스 객체가 초기화되지 않은 경우 실패 응답 전송
-		res.writeHead('200', {'Content-Type':'text/html;charset=utf8'});
-		res.write('<h2>데이터베이스 연결 실패</h2>');
-		res.write('<div><p>데이터베이스에 연결하지 못했습니다.</p></div>');
-		res.end();
-	}
+              result: { ok: 1, n: 1 },
+              ops: [ { id: 'kkung!', password: '쿵이짱', name: '조쿵이', _id: [ObjectID] } ],
+              insertedCount: 1,
+              insertedIds: {
+                '0': ObjectID { _bsontype: 'ObjectID', id: [Buffer [Uint8Array]] }
+              }
+            }*/
+                
+                res.writeHead('200', {'Content-Type' : 'text/html;charset=utf-8'});
+                res.write('<h2>사용자 추가 성공</h2>');
+                res.end();
+            }else{
+                res.writeHead('200', {'Content-Type' : 'text/html;charset=utf-8'});
+                res.write('<h2>사용자 추가 실페</h2>');
+                res.end();
+                
+            }
+        });
+    }else{
+        
+        res.writeHead('200', {'Content-Type' : 'text/html;charset=utf-8'});
+        res.write('<h2>데이터베이스 연결 실패</h2>');
+        res.end();
+    }
 	
 });
 
@@ -151,31 +160,31 @@ router.route('/process/login').post(function(req, res) {
 app.use('/', router);
 
 
-//사용자 인증하기!!
-var authUser = function(database, id, password, callback){
-    console.log('authUser 함수 호출!!');
 
-    //database.collection : 'users' 컬렉션 참조
+//사용자 추가하기!!
+var addUser = function (database, id, password, name, callback){
+    
+    console.log('addUser 호출됨 : '+ id + ', ' + password + ', ' + name);
+    
+    //'users' 컬렉션 참조
     var users = database.collection('users');
-
-    //아이디와 비밀번호 사용하여 검색하기
-    users.find({"id" : id, "password" : password}).toArray(function(err,docs){
-        if(err){
+    
+    //id, password, username을 사용해 사용자를 추가한다.
+    //insertMany() : 데이터 추가 함수
+    users.insertMany([{"id":id, "password":password, "name":name}], function(err, result){
+        if(err){    //오류나면 콜백함수 호출 후 오류 객체 전달
             callback(err,null);
             return;
-
         }
-
-        if(docs.length>0){
-            console.log("아이디[%s], 비밀번호[%s]가 일치함.", id, password);
-            callback(null,docs);
-
+        
+        if(result.insertedCount > 0){
+           console.log('사용자 레코드 추가됨' + result.insertedCount);
+           
         }else{
-            console.log("아이디 또는 비밀번호가 일치하지 않음.")
-            callback(null,null);
+            console.log('추가된 레코드 없음' + result.insertedCount);
         }
-
-
+        
+        callback(null, result);
     });
 }
 
