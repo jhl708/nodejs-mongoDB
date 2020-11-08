@@ -84,15 +84,98 @@ calc.prototype.add = function(a, b){
 module.exports = calc;  //calc 프로토타입 할당
 
 
-
-
-
-
-
-
-
-
-
-
 //3. 파일 다루기
+var fs = require('fs');
+var data = fs.readFileSync('./nodejs-mongoDB/package.json', 'utf-8');
+console.log(data);
+/*파일 내용을 그대로 읽어줌
+{
+  "name": "hyerii",
+  "version": "1.0.0",
+  "description": "",
+  "main": "calc.js",
+  "dependencies": {
+    "body-parser": "^1.19.0",
+    "cookie-parser": "^1.4.5",
+    "errorhandler": "^1.5.1",
+    "express": "^4.17.1",
+    "express-error-handler": "^1.1.0",
+    "express-session": "^1.17.1",
+    "http": "0.0.1-security",
+    "mongodb": "^3.6.2",
+    "mongoose": "^5.10.11",
+    "nconf": "^0.10.0",
+    "path": "^0.12.7",
+    "serve-static": "^1.14.1"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC"
+}
+*/
+
+//비동기 방식
+fs.readFile('./nodejs-mongoDB/package.json', 'utf-8', function(err, data){       
+    console.log(data);
+    //결과는 같지만 파일을 읽을 때까지 기다리지 않고 다른 코드 실행할수 있음 : 이게 비동기 방식
+});  
+
+
+/*fs.writeFile('./nodejs-mongoDB/output.txt', 'HYERII', function(err){        
+    if(err){        //에러 발생한다면 확인
+        console.log('에러 발생 : ' + err);
+        console.dir(err);
+        return;
+    }
+    console.log('output.txt 파일에 데이터 쓰기 완료'); 
+});*/
+
+//파일을 직접 열고 쓰고난 후 닫기
+
+fs.open('./nodejs-mongoDB/output.txt', 'w', function(err, fd){      //'w' : 쓰기, 'r' : 읽기
+    if(err){
+        console.log('파일 오픈 시 에러 발생함');
+        return;
+    }
+    var buf = new Buffer('출근 시르당\n');
+    fs.write(fd, buf, 0, buf.length, null, function(err, written, buffer){      //0 : 초기값, buf.length : 전체 출력한다.
+        if(err){
+            console.log('파일 쓰기 시 에러 발생');
+            return;
+        }
+        console.log('파일쓰기 완료');
+        fs.close(fd, function(){
+            console.log('파일 닫기 완료함.');
+        });
+    });
+});       
+
+
+//Buffer()
+var output = '조하느리';
+var buffer1 =new Buffer(20);    //길이가 20인 buffer객체 생성
+var len = buffer1.write(output, 'utf8'); //write 리턴값은 길이
+console.log('버퍼에 쓰인 문자열의 길이 : ' +len);  //12
+console.log('첫번째 버퍼에 쓰인 문자열 : ' + buffer1.toString());
+
+console.log('버퍼객체인지 아닌지 여부 확인 : ' + Buffer.isBuffer(buffer1));  //true
+
+var bytelen = Buffer.byteLength(buffer1);
+console.log('bytelen : ' +bytelen);     //20
+
+var str1 = buffer1.toString('utf-8', 0, 5);
+console.log('str1 : ' +str1);
+
+
+//Stream
+var infile = fs.createReadStream('./output.txt', {flags:'r'});  //flags : 'r' - 읽기 권한 부여
+infile.on('data', function(data){
+    console.log('읽어들인 데이터 : ' + data);
+});
+infile.on('end', function(){
+    console.log('읽기 종료');
+})
 //4. 로그 파일 남기기
