@@ -141,6 +141,7 @@ fs.open('./nodejs-mongoDB/output.txt', 'w', function(err, fd){      //'w' : 쓰�
         return;
     }
     var buf = new Buffer('출근 시르당\n');
+    console.log('fd!!!!!!!!!!!!!'+fd);
     fs.write(fd, buf, 0, buf.length, null, function(err, written, buffer){      //0 : 초기값, buf.length : 전체 출력한다.
         if(err){
             console.log('파일 쓰기 시 에러 발생');
