@@ -33,4 +33,4 @@ console.log('value : ' + value);
 
 /*npm init : package.json 파일이 만들어지는데 다른PC에서 실행할 때 
 npm install이라고 쓰면 전 PC에서 설치했던 파일 한꺼번에 설치됨 
-회사에서 유용*/
+회사에서 유용가리*/
