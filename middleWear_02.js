@@ -1,8 +1,9 @@
+//라우터 미들웨어
 var express = require('express');
 var http = require('http');
 var static = require('serve-static');
 var path = require('path');
-var bodyParser = require('body-parser');  //POST
+var bodyParser = require('body-parser');  
 
 var app = express();
 
@@ -16,19 +17,24 @@ app.use('/path', static(path.join(__dirname, 'public')));
 app.use(bodyParser.urlencoded({extended:false}));
 app.use(bodyParser.json());
 
-app.use(function(req, res, next){
-    console.log('첫 번째 미들웨어 호출');
-    //클라이언트가 요청한 값
-    var paramId = req.body.id;//name이 id인 값
-    var paramPw = req.body.password; //name이 password인 값
+//라우팅 함수 호출
+var router = express.Router() ;
+
+router.route('/process/login').post(function(req, res){ //요청path를 등록함
+    console.log('.process/login 라우팅 함수에서 받음.');
+    var paramId = req.body.id;
+    var paramPw = req.body.password;
     
-    res.writeHead('200', {"Content-Type":"text/html;charset=utf-8"});
+    res.writeHead(200, {"Content-Type" : "text/html;charset=utf-8"});
     res.write('<h1>EXPRESS 서버에서 응답한 결과입니다.');
     res.write('<div><p>param ID : ' + paramId +'</p></div>');
     res.write('<div><p>param PW : ' + paramPw +'</p></div>');
     res.end();
     
-});
+}); 
+app.use('/', router);
+
+
 
 
 var server = http.createServer(app).listen(app.get('port'), function(){
