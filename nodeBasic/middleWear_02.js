@@ -20,18 +20,25 @@ app.use(bodyParser.json());
 //라우팅 함수 호출
 var router = express.Router() ;
 
-router.route('/process/login').post(function(req, res){ //요청path를 등록함
+router.route('/process/login/:name').post(function(req, res){ //요청path를 등록함
     console.log('.process/login 라우팅 함수에서 받음.');
+    
     var paramId = req.body.id;
     var paramPw = req.body.password;
+    var paramName = req.params.name;
     
     res.writeHead(200, {"Content-Type" : "text/html;charset=utf-8"});
     res.write('<h1>EXPRESS 서버에서 응답한 결과입니다.');
     res.write('<div><p>param ID : ' + paramId +'</p></div>');
     res.write('<div><p>param PW : ' + paramPw +'</p></div>');
+    res.write('<div><p>param PW : ' + paramName +'</p></div>')
     res.end();
     
 }); 
+
+/*app.all('*', function(req, res){
+    res.status(404).send('<h1>에러 페이지!!!!!!!!!!!!!!!</h1>');
+});*/
 app.use('/', router);
 
 

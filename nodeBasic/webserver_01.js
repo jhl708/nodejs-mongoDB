@@ -11,6 +11,9 @@ server.listen(port, host, '50000',function(){   //'50000' : 동시에 접속할 
 
 server.on('connection', function(socket){
     console.log('클라이언트가 접속했습니다.');
+    var addr = socket.address();
+    console.log('클라이언트가 접속했습니다. : %s, %d', addr.address, addr.port);
+          
     
 });
 server.on('request',function(req, res){ 
