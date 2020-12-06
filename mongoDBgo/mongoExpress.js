@@ -6,10 +6,7 @@ npm install body-parser
 npm install cookie-parser
 npm install express-session
 npm install express-error-handler
-
 */
-
-
 
 var express = require('express');
 var http = require('http');
