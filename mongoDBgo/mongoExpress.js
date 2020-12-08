@@ -123,7 +123,7 @@ router.route('/process/login').post(function(req, res) {
                 // 조회 결과에서 사용자 이름 확인
 				var username = docs[0].name;
 				
-				res.writeHead('200', {'Content-Type':'text/html;charset=utf8'});
+				res.writeHead('200', {'Content-Type':'text/html;charset=utf-8'});
 				res.write('<h1>로그인 성공</h1>');
 				res.write('<div><p>사용자 아이디 : ' + paramId + '</p></div>');
 				res.write('<div><p>사용자 이름 : ' + username + '</p></div>');
@@ -131,7 +131,7 @@ router.route('/process/login').post(function(req, res) {
 				res.end();
 			
 			} else {  // 조회된 레코드가 없는 경우 실패 응답 전송
-				res.writeHead('200', {'Content-Type':'text/html;charset=utf8'});
+				res.writeHead('200', {'Content-Type':'text/html;charset=utf-8'});
 				res.write('<h1>로그인  실패</h1>');
 				res.write('<div><p>아이디와 패스워드를 다시 확인하십시오.</p></div>');
 				res.write("<br><br><a href='/mongoDB/public/login.html'>다시 로그인하기</a>");
@@ -139,7 +139,7 @@ router.route('/process/login').post(function(req, res) {
 			}
 		});
 	} else {  // 데이터베이스 객체가 초기화되지 않은 경우 실패 응답 전송
-		res.writeHead('200', {'Content-Type':'text/html;charset=utf8'});
+		res.writeHead('200', {'Content-Type':'text/html;charset=utf-8'});
 		res.write('<h2>데이터베이스 연결 실패</h2>');
 		res.write('<div><p>데이터베이스에 연결하지 못했습니다.</p></div>');
 		res.end();
@@ -147,6 +147,54 @@ router.route('/process/login').post(function(req, res) {
 	
 });
 
+
+//추가된 사용자
+router.route('/process/adduser').post(function(req,res){
+    
+    console.log('/process/adduser 라우팅 함수 호출됨');
+    
+    var paramID = req.body.id || req.query.id;
+    var paramPW = req.body.password || req.query.password;
+    var paramName = req.body.name || req.body.name;
+    
+    console.log('요청 파라미터 확인! : '+ paramID + ', ' + paramPW + ', ' + paramName);
+    
+    if(database){
+        addUser(database, paramID, paramPW, paramName, function(err, result){
+            if(err){
+                console.log('에러발생!');
+                res.writeHead(200, {"Content-Type":"text/html;charset=utf-8"});
+                res.write('<h1>에러 발생</h1>');
+                res.end();
+                return;
+            }
+            
+            //에러발생안함
+            if(result){
+                
+                console.dir(result);
+                
+                res.writeHead(200, {"Content-Type":"text/html;charset=utf-8"});
+                res.write('<h1>사용자 추가 성공</h1>');
+                res.write('<div><p>사용자 : ' + paramName + '</p></div>');
+                res.end();
+            }else{
+                console.log('사용자 추가 안됨');
+                res.writeHead(200, {"Content-Type" : "text/html;charset=utf-8"});
+                res.write('<h1>사용자 데이터 조회 안됨</h1>');
+                res.end();
+                
+            }
+        })
+    }else{
+        
+        console.log('데이터베이스 연결 안됨');
+        res.writeHead(200, {"Content-Type" : "text/html;charset=utf-8"});
+        res.write('<h1>데이터베이스 연결 안됨</h1>');
+        res.end();
+    }
+    
+});
 
 
 //라우터 객체 등록
@@ -179,7 +227,32 @@ var authUser = function(database, id, password, callback){
 
 
     });
-}
+};
+
+
+//사용자 추가하는 함수!
+var addUser = function(db, id, password, name, callback){
+    
+    console.log('addUser 호출됨 : ' + id + ', ' + password + ', ' + name);
+    
+    var users = db.collection('users');
+    
+    //파라미터를 배열로 입력 
+    users.insertMany([{"id":id, "password":password,    "name":name}], function(err, result){
+        if(err){
+            callback(err, null);
+            return;
+        }
+        
+        if(result.insertedCount > 0){   // insert 됨
+            console.log('사용자 추가됨 : ' + result.insertedCount);
+            callback(null, result);
+        }else{
+            console.log('추가된 레코드가 없음.');
+            callback(null, null);
+        }
+    }); 
+};
 
 //===== 404 오류 페이지 처리 =====//
 var errorHandler = expressErrorHandler({
