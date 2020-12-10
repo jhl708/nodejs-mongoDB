@@ -25,7 +25,7 @@ var express = require('express')
 var bodyParser = require('body-parser')
     , cookieParser = require('cookie-parser')
     , static = require('serve-static')
-    , errirHandler = require('errorhandler');
+    , errorHandler = require('errorhandler');
 
 
 //오류 핸들러 모듈 사용
@@ -57,7 +57,7 @@ app.use(bodyParser.json());
 app.use('/public', static(path.join(__dirname, 'public')));
 
 
-//public 폴더를 static으로 오픈
+
 app.use(cookieParser());
 
 
